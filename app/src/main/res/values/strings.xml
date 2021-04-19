@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Scoped Storage Test</string>
+    <string name="get_directory">Get directory</string>
+</resources>
