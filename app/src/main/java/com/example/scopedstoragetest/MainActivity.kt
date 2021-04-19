@@ -1,15 +1,11 @@
 package com.example.scopedstoragetest
 
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
 import com.example.scopedstoragetest.databinding.ActivityMainBinding
@@ -18,16 +14,17 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    private val getAccessRequest =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+    private val storageDirRequest =
+        registerForActivityResult(StartActivityForResult()) { result: ActivityResult ->
 
-            val uri: Uri? = result.data?.data
+            val uri = result.data?.data
+            val directory = DocumentFile.fromTreeUri(applicationContext, uri!!)
 
-            Log.d(LOG_TAG, "URI = $uri!!")
+//          debug code
+            Log.d(LOG_TAG, "Selected Uri: $uri")
+            Log.d(LOG_TAG, "Directory name: ${getFileName(directory)}")
 
-            val directoryDocFile = DocumentFile.fromTreeUri(applicationContext, uri!!)
-            Log.d(LOG_TAG, getFileName(directoryDocFile!!))
-            val fileList = directoryDocFile.listFiles()
+            val fileList = directory?.listFiles() ?: emptyArray()
 
             for (docFile in fileList) {
                 Log.d(LOG_TAG, getFileName(docFile))
@@ -42,28 +39,30 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.myButton.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                getAccess()
-            }
+            requestStoragePermission()
         }
     }
 
-    private fun getFileName(docFile: DocumentFile): String {
-        val cursor = this.contentResolver.query(
+    private fun getFileName(docFile: DocumentFile?): String {
+
+        // If doc file is null, return
+        docFile ?: return FILE_NAME_NOT_FOUND
+
+        // Query the doc, get and return its display name
+        this.contentResolver.query(
             docFile.uri,
             arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
             null,
             null,
             null
-        )
-        cursor?.moveToFirst()
-        val fileName = cursor?.getString(0) ?: "Name not found"
-        cursor?.close()
-        return fileName
+        ).use {
+            it?.moveToFirst()
+            return it?.getString(0) ?: FILE_NAME_NOT_FOUND
+        }
+
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    private fun getAccess() {
+    private fun requestStoragePermission() {
 
 //        val storageManager = getSystemService(StorageManager::class.java)
 //        val volumes = storageManager.storageVolumes
@@ -71,11 +70,11 @@ class MainActivity : AppCompatActivity() {
 //            Log.i(LOG_TAG, "$volume, removable=${volume.isRemovable}")
 //        }
 
-        // You can specify initial folder using intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI
+        // Specify initial folder with intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI
         Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also {
             it.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             it.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-            getAccessRequest.launch(it)
+            storageDirRequest.launch(it)
         }
     }
 
