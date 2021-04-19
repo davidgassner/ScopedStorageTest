@@ -17,14 +17,14 @@ class MainActivity : AppCompatActivity() {
     private val storageDirRequest =
         registerForActivityResult(StartActivityForResult()) { result: ActivityResult ->
 
-            val uri = result.data?.data
-            val directory = DocumentFile.fromTreeUri(applicationContext, uri!!)
+            val uri = result.data?.data ?: return@registerForActivityResult
+            val directory = DocumentFile.fromTreeUri(applicationContext, uri)
 
 //          debug code
-            Log.d(LOG_TAG, "Selected Uri: $uri")
-            Log.d(LOG_TAG, "Directory name: ${getFileName(directory)}")
+//            Log.d(LOG_TAG, "Selected Uri: $uri")
+//            Log.d(LOG_TAG, "Directory name: ${getFileName(directory!!)}")
 
-            val fileList = directory?.listFiles() ?: emptyArray()
+            val fileList = directory?.listFiles() ?: return@registerForActivityResult
 
             for (docFile in fileList) {
                 Log.d(LOG_TAG, getFileName(docFile))
@@ -43,10 +43,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getFileName(docFile: DocumentFile?): String {
-
-        // If doc file is null, return
-        docFile ?: return FILE_NAME_NOT_FOUND
+    private fun getFileName(docFile: DocumentFile): String {
 
         // Query the doc, get and return its display name
         this.contentResolver.query(
