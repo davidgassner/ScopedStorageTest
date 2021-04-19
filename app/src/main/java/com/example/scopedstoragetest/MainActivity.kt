@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
 //            Log.d(LOG_TAG, "Selected Uri: $uri")
 //            Log.d(LOG_TAG, "Directory name: ${getFileName(directory!!)}")
 
-            val fileList = directory?.listFiles() ?: return@registerForActivityResult
+            val fileList = directory?.listFiles() ?: emptyArray()
 
             for (docFile in fileList) {
                 Log.d(LOG_TAG, getFileName(docFile))
