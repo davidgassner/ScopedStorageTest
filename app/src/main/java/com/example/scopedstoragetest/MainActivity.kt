@@ -17,7 +17,6 @@ import com.example.scopedstoragetest.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var filePath: String
 
     private val getAccessRequest =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
@@ -26,48 +25,14 @@ class MainActivity : AppCompatActivity() {
 
             Log.d(LOG_TAG, "URI = $uri!!")
 
-            val dFile = DocumentFile.fromTreeUri(applicationContext, uri!!)
-            val fileList = dFile!!.listFiles()
-            Log.d(LOG_TAG, fileList.toString())
+            val directoryDocFile = DocumentFile.fromTreeUri(applicationContext, uri!!)
+            Log.d(LOG_TAG, getFileName(directoryDocFile!!))
+            val fileList = directoryDocFile.listFiles()
 
             for (docFile in fileList) {
-                Log.d(
-                    LOG_TAG, """
-     File: ${docFile.uri}
-     
-     """.trimIndent()
-                )
-                val cursor = this.contentResolver.query(
-                    docFile.uri,
-                    arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
-                    null,
-                    null,
-                    null
-                )
-                cursor?.let {
-                    it.moveToFirst()
-                    filePath = it.getString(0)
-                    it.close()
-                }
+                Log.d(LOG_TAG, getFileName(docFile))
             }
 
-//            if (uri?.scheme == "content") {
-//                val cursor = this.contentResolver.query(
-//                    uri,
-//                    arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
-//                    null,
-//                    null,
-//                    null
-//                )
-//                cursor?.let {
-//                    it.moveToFirst()
-//                    filePath = it.getString(0)
-//                    it.close()
-//                }
-//            } else {
-//                filePath = uri?.path.toString()
-//            }
-//            Log.d("", "Chosen path = $filePath")
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,14 +48,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getFileName(docFile: DocumentFile): String {
+        val cursor = this.contentResolver.query(
+            docFile.uri,
+            arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )
+        cursor?.moveToFirst()
+        val fileName = cursor?.getString(0) ?: "Name not found"
+        cursor?.close()
+        return fileName
+    }
+
     @RequiresApi(Build.VERSION_CODES.N)
     private fun getAccess() {
 
-        val storageManager = getSystemService(StorageManager::class.java)
-        val volumes = storageManager.storageVolumes
-        for (volume in volumes) {
-            Log.i(LOG_TAG, "$volume, removable=${volume.isRemovable}")
-        }
+//        val storageManager = getSystemService(StorageManager::class.java)
+//        val volumes = storageManager.storageVolumes
+//        for (volume in volumes) {
+//            Log.i(LOG_TAG, "$volume, removable=${volume.isRemovable}")
+//        }
 
         // You can specify initial folder using intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI
         Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also {
@@ -99,17 +78,5 @@ class MainActivity : AppCompatActivity() {
             getAccessRequest.launch(it)
         }
     }
-
-//    private fun getMusicStorageDir(context: Context, showName: String): File? {
-//        // Get the pictures directory that's inside the app-specific directory on
-//        // external storage.
-//        val file = File(getExternalFilesDir(
-//            "AudioCues/shows"), showName)
-//        if (!file.mkdirs()) {
-//            Log.e("storage_test", "Directory not created")
-//        }
-//        return file
-//    }
-
 
 }
