@@ -2,7 +2,7 @@ package com.example.scopedstoragetest
 
 import android.content.Intent
 import android.os.Bundle
-import android.provider.MediaStore
+import android.provider.MediaStore.MediaColumns.DISPLAY_NAME
 import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
@@ -24,8 +24,8 @@ class MainActivity : AppCompatActivity() {
             Log.d(LOG_TAG, "Selected Uri: $uri")
             Log.d(LOG_TAG, "Directory name: ${getFileName(directory)}")
 
+//          Get and iterate through list of files in the directory
             val fileList = directory?.listFiles() ?: emptyArray()
-
             for (docFile in fileList) {
                 Log.d(LOG_TAG, getFileName(docFile))
             }
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         // Query the doc, get and return its display name
         this.contentResolver.query(
             docFile.uri,
-            arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
+            arrayOf(DISPLAY_NAME),
             null,
             null,
             null
