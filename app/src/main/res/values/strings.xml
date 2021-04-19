@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Scoped Storage Test</string>
-    <string name="get_directory">Get directory</string>
+    <string name="choose_directory">Choose directory</string>
+    <string name="create_file">Create file</string>
+    <string name="make_dir">Make directory</string>
+    <string name="import_file">Import file</string>
 </resources>

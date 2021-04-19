@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
@@ -13,12 +14,13 @@ import com.example.scopedstoragetest.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var directory: DocumentFile? = null
 
     private val storageDirRequest =
         registerForActivityResult(StartActivityForResult()) { result: ActivityResult ->
 
             val uri = result.data?.data ?: return@registerForActivityResult
-            val directory = DocumentFile.fromTreeUri(applicationContext, uri)
+            directory = DocumentFile.fromTreeUri(applicationContext, uri)
 
 //          debug code
 //            Log.d(LOG_TAG, "Selected Uri: $uri")
@@ -32,14 +34,39 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+    private val importFileRequest =
+        registerForActivityResult(GetContent()) {
+
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.myButton.setOnClickListener {
-            requestStoragePermission()
+        with(binding) {
+            chooseDirButton.setOnClickListener { requestStoragePermission() }
+            createFileButton.setOnClickListener { createFile() }
+            createDirButton.setOnClickListener { makeDir() }
+            importFileButton.setOnClickListener { importFile() }
+        }
+    }
+
+    private fun importFile() {
+        TODO("Not yet implemented")
+    }
+
+    private fun makeDir() {
+        directory?.createDirectory("aSubDirectory")
+    }
+
+    private fun createFile() {
+        directory?.createFile("text/plain", "myfile.txt").also {
+            contentResolver.openOutputStream(it!!.uri).use { out ->
+                val text = "Hello world!"
+                out?.write(text.toByteArray())
+            }
         }
     }
 
