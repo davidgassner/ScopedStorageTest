@@ -14,8 +14,8 @@ import com.example.scopedstoragetest.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private var appStorageDir: DocumentFile? = null
+    private lateinit var binding: ActivityMainBinding
 
     private val storageDirRequest =
         registerForActivityResult(StartActivityForResult()) { result: ActivityResult ->
@@ -62,8 +62,8 @@ class MainActivity : AppCompatActivity() {
         val permissions = contentResolver.persistedUriPermissions
         if (permissions.isNotEmpty()) {
             val storageUri = permissions[0].uri
-            Log.d(LOG_TAG, "Is read? ${permissions[0].isReadPermission}" )
-            Log.d(LOG_TAG, "Is write? ${permissions[0].isWritePermission}" )
+            Log.d(LOG_TAG, "Is read? ${permissions[0].isReadPermission}")
+            Log.d(LOG_TAG, "Is write? ${permissions[0].isWritePermission}")
             appStorageDir = DocumentFile.fromTreeUri(this, storageUri)
         }
 
