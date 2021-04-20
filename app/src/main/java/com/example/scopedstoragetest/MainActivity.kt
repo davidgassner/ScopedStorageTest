@@ -1,5 +1,6 @@
 package com.example.scopedstoragetest
 
+import android.content.Context.*
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
@@ -14,19 +15,24 @@ import com.example.scopedstoragetest.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var directory: DocumentFile? = null
+    private var appStorageDir: DocumentFile? = null
 
     private val storageDirRequest =
         registerForActivityResult(StartActivityForResult()) { result: ActivityResult ->
 
             val uri = result.data?.data ?: return@registerForActivityResult
-            directory = DocumentFile.fromTreeUri(applicationContext, uri)
+            contentResolver.takePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+
+            appStorageDir = DocumentFile.fromTreeUri(applicationContext, uri)
 
 //          debug code
 //            Log.d(LOG_TAG, "Selected Uri: $uri")
 //            Log.d(LOG_TAG, "Directory name: ${getFileName(directory!!)}")
 
-            val fileList = directory?.listFiles() ?: emptyArray()
+            val fileList = appStorageDir?.listFiles() ?: emptyArray()
 
             for (docFile in fileList) {
                 Log.d(LOG_TAG, getFileName(docFile))
@@ -34,23 +40,31 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+    @Suppress("unused")
     private val importFileRequest =
         registerForActivityResult(GetContent()) {
-
+            // TODO: 4/20/21
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Set up binding, layout and event handlers
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         with(binding) {
             chooseDirButton.setOnClickListener { requestStoragePermission() }
             createFileButton.setOnClickListener { createFile() }
             createDirButton.setOnClickListener { makeDir() }
             importFileButton.setOnClickListener { importFile() }
         }
+
+        val permissions = contentResolver.persistedUriPermissions
+        if (permissions.isNotEmpty()) {
+            val storageUri = permissions[0].uri
+            appStorageDir = DocumentFile.fromSingleUri(this, storageUri)
+        }
+
     }
 
     private fun importFile() {
@@ -58,16 +72,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun makeDir() {
-        directory?.createDirectory("aSubDirectory")
+        appStorageDir?.createDirectory("aSubDirectory")
     }
 
     private fun createFile() {
-        directory?.createFile("text/plain", "myfile.txt").also {
-            contentResolver.openOutputStream(it!!.uri).use { out ->
-                val text = "Hello world!"
-                out?.write(text.toByteArray())
+        val fileName = "myFile.txt"
+        val existingFile = appStorageDir?.findFile(fileName)
+        if (existingFile == null) {
+            appStorageDir?.createFile("text/plain", fileName)?.also {
+                contentResolver.openOutputStream(it.uri).use { out ->
+                    val text = "Hello world!"
+                    out?.write(text.toByteArray())
+                }
             }
         }
+
     }
 
     private fun getFileName(docFile: DocumentFile): String {
@@ -96,8 +115,11 @@ class MainActivity : AppCompatActivity() {
 
         // Specify initial folder with intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI
         Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also {
-            it.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            it.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            it.addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
             storageDirRequest.launch(it)
         }
     }
