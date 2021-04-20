@@ -62,7 +62,9 @@ class MainActivity : AppCompatActivity() {
         val permissions = contentResolver.persistedUriPermissions
         if (permissions.isNotEmpty()) {
             val storageUri = permissions[0].uri
-            appStorageDir = DocumentFile.fromSingleUri(this, storageUri)
+            Log.d(LOG_TAG, "Is read? ${permissions[0].isReadPermission}" )
+            Log.d(LOG_TAG, "Is write? ${permissions[0].isWritePermission}" )
+            appStorageDir = DocumentFile.fromTreeUri(this, storageUri)
         }
 
     }
