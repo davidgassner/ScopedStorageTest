@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts.GetContent
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
@@ -41,8 +40,32 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val importFileRequest =
-        registerForActivityResult(GetContent()) {
-            Log.d(LOG_TAG, "URI: $it")
+        registerForActivityResult(StartActivityForResult()) {
+
+            val sourceUri = it.data?.data ?: return@registerForActivityResult
+            contentResolver.openInputStream(sourceUri).use { input ->
+
+                Log.d(LOG_TAG, "URI: $sourceUri")
+
+                // Get a DocumentFile object from the uri
+                val sourceDoc = DocumentFile.fromSingleUri(applicationContext, sourceUri)
+                    ?: return@registerForActivityResult
+
+                // If file already exists, delete it
+                val fileName = getFileName(sourceDoc)
+                appStorageDir?.findFile(fileName)?.delete()
+
+                val mimeType = sourceDoc.type ?: "audio/*"
+                Log.d(LOG_TAG, "Mime type: $mimeType")
+                val newFile = appStorageDir?.createFile(mimeType, fileName)
+                    ?: return@registerForActivityResult
+
+                Log.d(LOG_TAG, "Start copy")
+                contentResolver.openOutputStream(newFile.uri)?.use { output ->
+                    input?.copyTo(output)
+                }
+            }
+            Log.d(LOG_TAG, "End copy")
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +92,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun importFile() {
-        importFileRequest.launch("audio/*")
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("audio/*")
+        importFileRequest.launch(intent)
     }
 
     private fun makeDir() {
