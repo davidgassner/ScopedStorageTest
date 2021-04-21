@@ -2,7 +2,9 @@ package com.example.scopedstoragetest
 
 import android.content.Context.*
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.ActivityResult
@@ -75,33 +77,39 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         with(binding) {
-            chooseDirButton.setOnClickListener { requestStoragePermission() }
+            chooseDirButton.setOnClickListener { requestStorageDirectory() }
             createFileButton.setOnClickListener { createFile() }
             createDirButton.setOnClickListener { makeDir() }
-            importFileButton.setOnClickListener { importFile() }
+            importFileButton.setOnClickListener { requestImportFile() }
         }
 
         val permissions = contentResolver.persistedUriPermissions
         if (permissions.isNotEmpty()) {
+//            Log.d(LOG_TAG, "Is read? ${permissions[0].isReadPermission}")
+//            Log.d(LOG_TAG, "Is write? ${permissions[0].isWritePermission}")
             val storageUri = permissions[0].uri
-            Log.d(LOG_TAG, "Is read? ${permissions[0].isReadPermission}")
-            Log.d(LOG_TAG, "Is write? ${permissions[0].isWritePermission}")
             appStorageDir = DocumentFile.fromTreeUri(this, storageUri)
         }
 
     }
 
-    private fun importFile() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+    // Start a request to import a file from SAF
+    private fun requestImportFile() {
+        Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
-            .setType("audio/*")
-        importFileRequest.launch(intent)
+            .setType("audio/*").also {
+                importFileRequest.launch(it)
+            }
     }
 
+    // Create a directory
     private fun makeDir() {
-        appStorageDir?.createDirectory("aSubDirectory")
+        val newDirName = "aSubDirectory"
+        appStorageDir?.findFile(newDirName)
+            ?: appStorageDir?.createDirectory(newDirName)
     }
 
+    // Create a text file
     private fun createFile() {
         val fileName = "myFile.txt"
         val existingFile = appStorageDir?.findFile(fileName)
@@ -113,9 +121,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
+    // Get the name of a file represented by a DocumentFile object
     private fun getFileName(docFile: DocumentFile): String {
 
         // Query the doc, get and return its display name
@@ -132,7 +140,8 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun requestStoragePermission() {
+    // Let the user select a directory
+    private fun requestStorageDirectory() {
 
 //        val storageManager = getSystemService(StorageManager::class.java)
 //        val volumes = storageManager.storageVolumes
@@ -140,13 +149,16 @@ class MainActivity : AppCompatActivity() {
 //            Log.i(LOG_TAG, "$volume, removable=${volume.isRemovable}")
 //        }
 
-        // Specify initial folder with intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI
+        // Create and launch the intent
         Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).also {
             it.addFlags(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or
                         Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                         Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             )
+            if (appStorageDir != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.putExtra(DocumentsContract.EXTRA_INITIAL_URI, appStorageDir.toString())
+            }
             storageDirRequest.launch(it)
         }
     }
