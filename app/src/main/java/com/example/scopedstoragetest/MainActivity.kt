@@ -40,10 +40,9 @@ class MainActivity : AppCompatActivity() {
 
         }
 
-    @Suppress("unused")
     private val importFileRequest =
         registerForActivityResult(GetContent()) {
-            // TODO: 4/20/21
+            Log.d(LOG_TAG, "URI: $it")
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun importFile() {
-        TODO("Not yet implemented")
+        importFileRequest.launch("audio/*")
     }
 
     private fun makeDir() {
