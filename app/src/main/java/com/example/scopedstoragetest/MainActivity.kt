@@ -112,15 +112,13 @@ class MainActivity : AppCompatActivity() {
     // Create a text file
     private fun createFile() {
         val fileName = "myFile.txt"
-        val existingFile = appStorageDir?.findFile(fileName)
-        if (existingFile == null) {
-            appStorageDir?.createFile("text/plain", fileName)?.also {
+        appStorageDir?.findFile(fileName)
+            ?: appStorageDir?.createFile("text/plain", fileName)?.also {
                 contentResolver.openOutputStream(it.uri).use { out ->
                     val text = "Hello world!"
                     out?.write(text.toByteArray())
                 }
             }
-        }
     }
 
     // Get the name of a file represented by a DocumentFile object
