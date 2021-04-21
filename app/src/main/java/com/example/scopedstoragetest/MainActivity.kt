@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts.StartActivityFo
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
 import com.example.scopedstoragetest.databinding.ActivityMainBinding
+import com.example.scopedstoragetest.utilities.FileUtils
 
 class MainActivity : AppCompatActivity() {
 
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
             val fileList = appStorageDir?.listFiles() ?: emptyArray()
 
             for (docFile in fileList) {
-                Log.d(LOG_TAG, getFileName(docFile))
+                Log.d(LOG_TAG, FileUtils.getFileName(contentResolver, docFile))
             }
 
         }
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
                     ?: return@registerForActivityResult
 
                 // If file already exists, delete it
-                val fileName = getFileName(sourceDoc)
+                val fileName = FileUtils.getFileName(contentResolver, sourceDoc)
                 appStorageDir?.findFile(fileName)?.delete()
 
                 val mimeType = sourceDoc.type ?: "audio/*"
@@ -78,8 +79,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         with(binding) {
             chooseDirButton.setOnClickListener { requestStorageDirectory() }
-            createFileButton.setOnClickListener { createFile() }
-            createDirButton.setOnClickListener { makeDir() }
+            createFileButton.setOnClickListener {
+                FileUtils.makeFile(contentResolver, appStorageDir, "myFile.txt")
+            }
+            createDirButton.setOnClickListener { FileUtils.createDirectory(appStorageDir, "newDirectory") }
             importFileButton.setOnClickListener { requestImportFile() }
         }
 
@@ -100,42 +103,6 @@ class MainActivity : AppCompatActivity() {
             .setType("audio/*").also {
                 importFileRequest.launch(it)
             }
-    }
-
-    // Create a directory
-    private fun makeDir() {
-        val newDirName = "aSubDirectory"
-        appStorageDir?.findFile(newDirName)
-            ?: appStorageDir?.createDirectory(newDirName)
-    }
-
-    // Create a text file
-    private fun createFile() {
-        val fileName = "myFile.txt"
-        appStorageDir?.findFile(fileName)
-            ?: appStorageDir?.createFile("text/plain", fileName)?.also {
-                contentResolver.openOutputStream(it.uri).use { out ->
-                    val text = "Hello world!"
-                    out?.write(text.toByteArray())
-                }
-            }
-    }
-
-    // Get the name of a file represented by a DocumentFile object
-    private fun getFileName(docFile: DocumentFile): String {
-
-        // Query the doc, get and return its display name
-        this.contentResolver.query(
-            docFile.uri,
-            arrayOf(MediaStore.Audio.AudioColumns.DISPLAY_NAME),
-            null,
-            null,
-            null
-        ).use {
-            it?.moveToFirst()
-            return it?.getString(0) ?: FILE_NAME_NOT_FOUND
-        }
-
     }
 
     // Let the user select a directory
